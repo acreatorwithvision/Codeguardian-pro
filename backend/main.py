@@ -1,12 +1,15 @@
-from fastapi import Depends, FastAPI
-from .database import get_db
+from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from .database import get_db
+from .openai_service import analyze_code
 
 app = FastAPI()
 
-@app.get("/items/")
-async def read_items(db: AsyncSession = Depends(get_db)):
-    async with db as session:
-        result = await session.execute("SELECT * FROM items")
-        items = result.fetchall()
-        return items
+@app.post("/analyze-code/")
+async def analyze_code_endpoint(code_snippet: str, db: AsyncSession = Depends(get_db)):
+    
+    analysis_result = analyze_code(code_snippet)
+    if analysis_result:
+        return {"result": analysis_result}
+    else:
+        raise HTTPException(status_code=500, detail="Error processing your request")
